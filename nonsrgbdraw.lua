@@ -170,6 +170,10 @@ INIT_MAT_BIG()
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 timer.Create( 'nonsrgbdraw_updateinternals', 0.618, 0, function()
 
+	RenderPushTarget( RT_SMALL )
+		RenderClear( 255, 255, 255, 255 )
+	RenderPopTarget()
+
 	local wScreen, hScreen = ScrW(), ScrH()
 
 	if ( SCREEN_W == wScreen and SCREEN_H == hScreen ) then
