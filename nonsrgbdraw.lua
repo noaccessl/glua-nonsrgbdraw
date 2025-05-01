@@ -83,7 +83,7 @@ end
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 nonsrgbdraw = nonsrgbdraw or {
 
-	VERSION = 25050100 -- YY/MM/DD/##
+	VERSION = 25050101 -- YY/MM/DD/##
 
 }
 
@@ -501,6 +501,8 @@ local function SimpleText( text, font, x, y, color, xAlign, yAlign )
 		SurfaceSetDrawColor( 0, 0, 0, ALPHA_SHADOW_LAYER1 )
 		SurfaceDrawTexturedRectUV( x + 1, y + 1, w, h, 0, 0, u1, v1 )
 
+		RENDER_TEXTSHADOWS = false
+
 	end
 
 	if ( color ) then
@@ -641,8 +643,7 @@ local Text; do
 
 		end
 
-		local w, h_auto = CachedTextSize( text, font )
-		local h = 0
+		local w, h = CachedTextSize( text, font )
 
 		local xOffset = 0
 		local yOffset = 0
@@ -653,7 +654,7 @@ local Text; do
 
 		RenderPushTarget( RT_BIG )
 
-			RenderSetScissorRect( 0, 0, w, h_auto, true )
+			RenderSetScissorRect( 0, 0, w, h, true )
 				RenderClear( 255, 255, 255, 0 )
 			RenderSetScissorRect( 0, 0, 0, 0, false )
 
@@ -686,7 +687,6 @@ local Text; do
 						yOffset = yOffset + lineHeight
 					end
 
-					h = h + lineHeight
 					xOffset = 0
 
 				end
@@ -716,6 +716,8 @@ local Text; do
 
 			SurfaceSetDrawColor( 0, 0, 0, ALPHA_SHADOW_LAYER1 )
 			SurfaceDrawTexturedRectUV( x + 1, y + 1, w, h, 0, 0, u1, v1 )
+
+			RENDER_TEXTSHADOWS = false
 
 		end
 
