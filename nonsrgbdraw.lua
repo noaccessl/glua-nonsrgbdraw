@@ -30,6 +30,7 @@ local SurfaceDrawText = surface.DrawText
 
 local RenderPushTarget = render.PushRenderTarget
 local RenderPopTarget = render.PopRenderTarget
+local RenderSetScissorRect = render.SetScissorRect
 local RenderClear = render.Clear
 
 local CamEnd2D = cam.End2D
@@ -82,7 +83,7 @@ end
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 nonsrgbdraw = nonsrgbdraw or {
 
-	VERSION = 25042700 -- YY/MM/DD/##
+	VERSION = 25050100 -- YY/MM/DD/##
 
 }
 
@@ -454,10 +455,13 @@ local function SimpleText( text, font, x, y, color, xAlign, yAlign )
 	end
 
 	SurfaceSetFont( font )
+	local w, h = CachedTextSize( text, font )
 
 	RenderPushTarget( RT_BIG )
 
-		RenderClear( 255, 255, 255, 0 )
+		RenderSetScissorRect( 0, 0, w, h, true )
+			RenderClear( 255, 255, 255, 0 )
+		RenderSetScissorRect( 0, 0, 0, 0, false )
 
 		CamStart2D()
 
@@ -468,8 +472,6 @@ local function SimpleText( text, font, x, y, color, xAlign, yAlign )
 		CamEnd2D()
 
 	RenderPopTarget()
-
-	local w, h = CachedTextSize( text, font )
 
 	do
 
@@ -536,10 +538,13 @@ local function SimpleTextOutlined( text, font, x, y, color, xAlign, yAlign, outl
 	end
 
 	SurfaceSetFont( font )
+	local w, h = CachedTextSize( text, font )
 
 	RenderPushTarget( RT_BIG )
 
-		RenderClear( 255, 255, 255, 0 )
+		RenderSetScissorRect( 0, 0, w, h, true )
+			RenderClear( 255, 255, 255, 0 )
+		RenderSetScissorRect( 0, 0, 0, 0, false )
 
 		CamStart2D()
 
@@ -550,8 +555,6 @@ local function SimpleTextOutlined( text, font, x, y, color, xAlign, yAlign, outl
 		CamEnd2D()
 
 	RenderPopTarget()
-
-	local w, h = CachedTextSize( text, font )
 
 	do
 
@@ -638,7 +641,7 @@ local Text; do
 
 		end
 
-		local w = CachedTextSize( text, font )
+		local w, h_auto = CachedTextSize( text, font )
 		local h = 0
 
 		local xOffset = 0
@@ -650,7 +653,9 @@ local Text; do
 
 		RenderPushTarget( RT_BIG )
 
-			RenderClear( 255, 255, 255, 0 )
+			RenderSetScissorRect( 0, 0, w, h_auto, true )
+				RenderClear( 255, 255, 255, 0 )
+			RenderSetScissorRect( 0, 0, 0, 0, false )
 
 			CamStart2D()
 
