@@ -60,11 +60,11 @@ local IMAGE_FORMAT_A8 = 8
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Special variables
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local SCREEN_W = ScrW()
-local SCREEN_H = ScrH()
+local g_ScrW = ScrW()
+local g_ScrH = ScrH()
 
-local SCREEN_W_INV = 1 / ScrW()
-local SCREEN_H_INV = 1 / ScrH()
+local g_ScrW_i = 1 / ScrW()
+local g_ScrH_i = 1 / ScrH()
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Rounds to the closest even
@@ -83,7 +83,7 @@ end
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 nonsrgbdraw = nonsrgbdraw or {
 
-	VERSION = 25050101 -- YY/MM/DD/##
+	VERSION = 25061200 -- YY/MM/DD/##
 
 }
 
@@ -114,9 +114,9 @@ local function CreateNonSRGBMaterial( name, texture )
 
 end
 
-local RT_SMALL, MAT_SMALL; do
+local g_rt_Small, g_mat_Small; do
 
-	RT_SMALL = GetRenderTargetEx(
+	g_rt_Small = GetRenderTargetEx(
 
 		'_rt_NonSRGB_Small',
 		1, 1,
@@ -126,23 +126,23 @@ local RT_SMALL, MAT_SMALL; do
 
 	)
 
-	MAT_SMALL = CreateNonSRGBMaterial( '__small', '_rt_NonSRGB_Small' )
+	g_mat_Small = CreateNonSRGBMaterial( '__small', '_rt_NonSRGB_Small' )
 
-	RenderPushTarget( RT_SMALL )
+	RenderPushTarget( g_rt_Small )
 		RenderClear( 255, 255, 255, 255 )
 	RenderPopTarget()
 
 end
 
-local RT_BIG
-local MAT_BIG
+local g_rt_Large
+local g_mat_Large
 
-local function UPDATE_RT_BIG()
+local function UpdateLargeRT()
 
-	RT_BIG = GetRenderTargetEx(
+	g_rt_Large = GetRenderTargetEx(
 
-		Format( '_rt_NonSRGB_Big_%dx%d', SCREEN_W, SCREEN_H ),
-		SCREEN_W, SCREEN_H,
+		Format( '_rt_NonSRGB_Large_%dx%d', g_ScrW, g_ScrH ),
+		g_ScrW, g_ScrH,
 		RT_SIZE_NO_CHANGE, MATERIAL_RT_DEPTH_NONE,
 		1 + 256 + 512, 0,
 		IMAGE_FORMAT_A8
@@ -151,44 +151,42 @@ local function UPDATE_RT_BIG()
 
 end
 
-local function INIT_MAT_BIG()
+local function InitLargeMat()
 
-	MAT_BIG = CreateNonSRGBMaterial( '__big', RT_BIG:GetName() )
-
-end
-
-local function UPDATE_MAT_BIG()
-
-	MAT_BIG:SetTexture( '$basetexture', RT_BIG )
+	g_mat_Large = CreateNonSRGBMaterial( '__big', g_rt_Large:GetName() )
 
 end
 
-UPDATE_RT_BIG()
-INIT_MAT_BIG()
+local function UpdateLargeMat()
+
+	g_mat_Large:SetTexture( '$basetexture', g_rt_Large )
+
+end
+
+UpdateLargeRT()
+InitLargeMat()
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Update internals
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-timer.Create( 'nonsrgbdraw_updateinternals', 0.618, 0, function()
+hook.Add( 'OnScreenSizeChanged', 'nonsrgbdraw_catchup', function( _, _, wScreen, hScreen )
 
-	RenderPushTarget( RT_SMALL )
-		RenderClear( 255, 255, 255, 255 )
-	RenderPopTarget()
+	timer.Simple( 0, function()
 
-	local wScreen, hScreen = ScrW(), ScrH()
+		RenderPushTarget( g_rt_Small )
+			RenderClear( 255, 255, 255, 255 )
+		RenderPopTarget()
 
-	if ( SCREEN_W == wScreen and SCREEN_H == hScreen ) then
-		return
-	end
+	end )
 
-	SCREEN_W = wScreen
-	SCREEN_H = hScreen
+	g_ScrW = wScreen
+	g_ScrH = hScreen
 
-	SCREEN_W_INV = 1 / wScreen
-	SCREEN_H_INV = 1 / hScreen
+	g_ScrW_i = 1 / wScreen
+	g_ScrH_i = 1 / hScreen
 
-	UPDATE_RT_BIG()
-	UPDATE_MAT_BIG()
+	UpdateLargeRT()
+	UpdateLargeMat()
 
 end )
 
@@ -282,7 +280,7 @@ local function Rect( x, y, w, h, color )
 
 	end
 
-	SurfaceSetMaterial( MAT_SMALL )
+	SurfaceSetMaterial( g_mat_Small )
 	SurfaceDrawTexturedRect( x, y, w, h )
 
 end
@@ -304,7 +302,7 @@ local function OutlinedRect( x, y, w, h, color, thickness )
 
 	end
 
-	SurfaceSetMaterial( MAT_SMALL )
+	SurfaceSetMaterial( g_mat_Small )
 
 	local t = mathmin( thickness or 1, mathfloor( w * 0.5 ), mathfloor( h * 0.5 ) )
 
@@ -352,7 +350,7 @@ local RoundedBoxEx; do
 
 		r = mathmin( mathroundtoeven( r ), mathfloor( w * 0.5 ), mathfloor( h * 0.5 ) )
 
-		SurfaceSetMaterial( MAT_SMALL )
+		SurfaceSetMaterial( g_mat_Small )
 
 		SurfaceDrawTexturedRect( x + r, y, w - r * 2, h )
 		SurfaceDrawTexturedRect( x, y + r, r, h - r * 2 )
@@ -457,7 +455,7 @@ local function SimpleText( text, font, x, y, color, xAlign, yAlign )
 	SurfaceSetFont( font )
 	local w, h = CachedTextSize( text, font )
 
-	RenderPushTarget( RT_BIG )
+	RenderPushTarget( g_rt_Large )
 
 		RenderSetScissorRect( 0, 0, w, h, true )
 			RenderClear( 255, 255, 255, 0 )
@@ -489,9 +487,9 @@ local function SimpleText( text, font, x, y, color, xAlign, yAlign )
 
 	end
 
-	SurfaceSetMaterial( MAT_BIG )
+	SurfaceSetMaterial( g_mat_Large )
 
-	local u1, v1 = w * SCREEN_W_INV, h * SCREEN_H_INV
+	local u1, v1 = w * g_ScrW_i, h * g_ScrH_i
 
 	if ( RENDER_TEXTSHADOWS ) then
 
@@ -542,7 +540,7 @@ local function SimpleTextOutlined( text, font, x, y, color, xAlign, yAlign, outl
 	SurfaceSetFont( font )
 	local w, h = CachedTextSize( text, font )
 
-	RenderPushTarget( RT_BIG )
+	RenderPushTarget( g_rt_Large )
 
 		RenderSetScissorRect( 0, 0, w, h, true )
 			RenderClear( 255, 255, 255, 0 )
@@ -574,9 +572,9 @@ local function SimpleTextOutlined( text, font, x, y, color, xAlign, yAlign, outl
 
 	end
 
-	SurfaceSetMaterial( MAT_BIG )
+	SurfaceSetMaterial( g_mat_Large )
 
-	local u1, v1 = w * SCREEN_W_INV, h * SCREEN_H_INV
+	local u1, v1 = w * g_ScrW_i, h * g_ScrH_i
 
 	if ( colorOutline ) then
 		SurfaceSetDrawColor( colorOutline.r, colorOutline.g, colorOutline.b, colorOutline.a )
@@ -652,7 +650,7 @@ local Text; do
 
 		local _, lineHeight = CachedTextSize( ' ', font )
 
-		RenderPushTarget( RT_BIG )
+		RenderPushTarget( g_rt_Large )
 
 			RenderSetScissorRect( 0, 0, w, h, true )
 				RenderClear( 255, 255, 255, 0 )
@@ -695,7 +693,7 @@ local Text; do
 
 		RenderPopTarget()
 
-		SurfaceSetMaterial( MAT_BIG )
+		SurfaceSetMaterial( g_mat_Large )
 
 		do
 
@@ -707,7 +705,7 @@ local Text; do
 
 		end
 
-		local u1, v1 = w * SCREEN_W_INV, h * SCREEN_H_INV
+		local u1, v1 = w * g_ScrW_i, h * g_ScrH_i
 
 		if ( RENDER_TEXTSHADOWS ) then
 
